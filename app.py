@@ -19,6 +19,12 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 db = SQLAlchemy(app)
 
 
+HOST     = "127.0.0.1"
+PORT     = 5000
+URL      = f"http://{HOST}:{PORT}"
+BASE_DIR = Path(__file__).parent.resolve()
+HTML     = BASE_DIR / "index.html"
+
 # ==================== MODELOS ====================
 
 class Projeto(db.Model):
@@ -263,7 +269,9 @@ def criar_checklist_padrao():
 
 @app.route('/')
 def index():
-    return render_template('index1.3.html')
+    if HTML.exists():
+        return send_file(str(HTML))
+    return "<h2>index.html não encontrado</h2><p>Coloque o arquivo na mesma pasta que server.py</p>", 404
 
 
 # ---------- PROJETOS ----------
