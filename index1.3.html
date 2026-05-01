@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiCheck - Sistema de Checklists Multi-Projetos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --primary-light: #f0f4ff;
+            --secondary: #764ba2;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --dark: #2d3748;
+            --light: #f8f9fa;
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+        }
+
+        /* ==================== LAYOUT ====================  */
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+            position: fixed;
+            width: 280px;
+            z-index: 100;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar h4 {
+            color: white;
+            padding: 28px 24px;
+            margin: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar nav { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+
+        .sidebar nav a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 10px;
+            transition: var(--transition);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .sidebar nav a:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .sidebar nav a.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar nav a.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: white;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 32px;
+            min-height: 100vh;
+            background: linear-gradient(135deg, rgba(245,247,250,0.95), rgba(195,207,226,0.95));
+        }
+
+        /* ==================== GRID & LAYOUT ====================  */
+        .row { display: flex; flex-wrap: wrap; gap: 24px; }
+        .col-md-3 { flex: 1; min-width: 250px; }
+        .col-md-4 { flex: 1; min-width: 300px; }
+        .col-md-6 { flex: 2; min-width: 400px; }
+        .col-md-8 { flex: 2.5; min-width: 500px; }
+        .col-md-12 { flex: 0 0 100%; }
+
+        .container-fluid { padding: 0; }
+
+        /* ==================== CARDS ====================  */
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: var(--transition);
+            border: 1px solid var(--border);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, var(--primary-light) 0%, #f5f3ff 100%);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+        }
+
+        .card-body { padding: 24px; }
+        .card-footer {
+            padding: 16px 24px;
+            background: #fafbfc;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ==================== BOTÕES ====================  */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            padding: 10px 18px;
+            font-size: 14px;
+            border-radius: 10px;
+            border: none;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-lg { padding: 14px 28px; font-size: 15px; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #1f8a3b);
+            color: white;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #e0a800);
+            color: #212529;
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #c82333);
+            color: white;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--info), #138496);
+            color: white;
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(23, 162, 184, 0.4);
+        }
+
+        .btn-outline-primary {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ==================== BADGES ====================  */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bg-success { background: rgba(40, 167, 69, 0.15); color: #1f8a3b; }
+        .bg-warning { background: rgba(255, 193, 7, 0.15); color: #856404; }
+        .bg-primary { background: rgba(102, 126, 234, 0.15); color: var(--primary); }
+        .bg-secondary { background: rgba(108, 117, 125, 0.15); color: #495057; }
+        .bg-info { background: rgba(23, 162, 184, 0.15); color: #0c5460; }
+        .bg-danger { background: rgba(220, 53, 69, 0.15); color: #721c24; }
+
+        /* ==================== PROGRESS ====================  */
+        .progress {
+            display: flex;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset var(--shadow-sm);
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--success), #1f8a3b);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 11px;
+            line-height: 12px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* ==================== FORMS ====================  */
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .form-control::placeholder {
+            color: #a0aec0;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark);
+        }
+
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-check-label {
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .form-check-input {
+            width: 40px;
+            height: 24px;
+            cursor: pointer;
+            appearance: none;
+            background: #cbd5e0;
+            border-radius: 20px;
+            position: relative;
+            transition: var(--transition);
+            border: none;
+            flex-shrink: 0;
+        }
+
+        .form-check-input:checked {
+            background: linear-gradient(135deg, var(--success), #1f8a3b);
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .form-check-input::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: var(--transition);
+        }
+
+        .form-check-input:checked::before {
+            left: 19px;
+        }
+
+        /* ==================== TABLES ====================  */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th, .table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark);
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .table-hover tbody tr {
+            transition: var(--transition);
+        }
+
+        .table-hover tbody tr:hover {
+            background: var(--primary-light);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ==================== ALERTS ====================  */
+        .alert {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-info {
+            background: rgba(23, 162, 184, 0.1);
+            border-left-color: var(--info);
+            color: #0c5460;
+        }
+
+        .alert-success {
+            background: rgba(40, 167, 69, 0.1);
+            border-left-color: var(--success);
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: var(--warning);
+            color: #856404;
+        }
+
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.1);
+            border-left-color: var(--danger);
+            color: #721c24;
+        }
+
+        /* ==================== MODAL ====================  */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1050;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.show { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-dialog {
+            width: 90%;
+            max-width: 600px;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-xl { max-width: 1100px; }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-light) 0%, #f5f3ff 100%);
+        }
+
+        .modal-body {
+            padding: 24px;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e0;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background: #fafbfc;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #a0aec0;
+            transition: var(--transition);
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+        }
+
+        .btn-close:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--dark);
+        }
+
+        /* ==================== UTILITY ====================  */
+        .text-center { text-align: center; }
+        .text-muted { color: #718096; }
+        .text-white { color: white; }
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+
+        .mt-1 { margin-top: 4px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 16px; }
+        .mt-4 { margin-top: 24px; }
+
+        .mb-0 { margin-bottom: 0; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 16px; }
+        .mb-4 { margin-bottom: 24px; }
+
+        .me-1 { margin-right: 4px; }
+        .me-2 { margin-right: 8px; }
+        .me-3 { margin-right: 16px; }
+
+        .py-5 { padding: 48px 0; }
+        .px-3 { padding: 0 16px; }
+
+        .d-flex { display: flex; }
+        .align-items-center { align-items: center; }
+        .justify-content-between { justify-content: space-between; }
+        .justify-content-center { justify-content: center; }
+        .flex-wrap { flex-wrap: wrap; }
+        .flex-grow-1 { flex-grow: 1; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 16px; }
+        .w-100 { width: 100%; }
+        .cursor-pointer { cursor: pointer; }
+
+        /* ==================== CARDS ESPECIAIS ====================  */
+        .projeto-card, .template-card {
+            transition: var(--transition);
+            cursor: pointer;
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .projeto-card::before, .template-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .projeto-card:hover, .template-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card {
+            border-radius: 14px;
+            padding: 24px;
+            background: white;
+            border: 2px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        .stat-card h3 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 8px 0 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-card h6 {
+            font-size: 12px;
+            opacity: 0.8;
+            margin: 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== UPLOAD ====================  */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--primary-light);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-area.drag-over {
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.15);
+        }
+
+        /* ==================== PÁGINAS ====================  */
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .page.active { display: block; }
+
+        /* ==================== SPINNER ====================  */
+        .spinner-border {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin: 48px 0;
+        }
+
+        /* ==================== EMPTY STATE ====================  */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+
+        .empty-state h4 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        /* ==================== TOAST ====================  */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            display: none;
+            min-width: 320px;
+            animation: slideInRight 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast.show { display: flex; }
+
+        .toast-header {
+            padding: 12px 16px;
+            background: var(--primary-light);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .toast-body {
+            padding: 12px 16px;
+            flex: 1;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #a0aec0;
+            font-size: 20px;
+        }
+
+        /* ==================== TABLE EDITABLE ====================  */
+        .table-cell-editable {
+            cursor: pointer;
+            position: relative;
+            padding: 8px 12px !important;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+
+        .table-cell-editable:hover {
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* ==================== RESPONSIVE ====================  */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+                width: 280px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+
+            .col-md-3, .col-md-4, .col-md-6, .col-md-8 {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+
+            .modal-dialog {
+                width: 95%;
+            }
+
+            .row {
+                gap: 16px;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer > button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .btn {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+
+            .stat-card h3 {
+                font-size: 24px;
+            }
+
+            .toast-notification {
+                right: 12px;
+                bottom: 12px;
+            }
+
+            .toast {
+                min-width: auto;
+                width: calc(100vw - 24px);
+            }
+        }
+
+        hr {
+            margin: 16px 0;
+            border: 0;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== SIDEBAR ====================  -->
+<div class="sidebar">
+    <h4>✓ MultiCheck</h4>
+    <nav>
+        <a onclick="showPage('projetos')" id="nav-projetos" class="active">
+            <span>📁</span>
+            <span>Projetos</span>
+        </a>
+        <a onclick="showPage('dashboard')" id="nav-dashboard">
+            <span>📊</span>
+            <span>Dashboard</span>
+        </a>
+        <a onclick="showPage('templates')" id="nav-templates">
+            <span>📋</span>
+            <span>Templates</span>
+        </a>
+    </nav>
+</div>
+
+<!-- ==================== MAIN CONTENT ====================  -->
+<div class="main-content">
+    <!-- Página de Projetos -->
+    <div id="page-projetos" class="page active">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h2 style="margin: 0; font-size: 28px; font-weight: 700;">📁 Meus Projetos</h2>
+                <p style="color: var(--text-muted); margin: 4px 0 0;">Gerencie todos os seus projetos e checklists</p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-warning" onclick="mostrarModalMigracao()">
+                    🔄 Migrar Dados
+                </button>
+                <button class="btn btn-primary" onclick="mostrarModalNovoProjeto()">
+                    ➕ Novo Projeto
+                </button>
+            </div>
+        </div>
+        <div id="projetos-container" class="row"></div>
+    </div>
+
+    <!-- Página de Dashboard -->
+    <div id="page-dashboard" class="page">
+        <h2 style="margin: 0 0 8px; font-size: 28px; font-weight: 700;">📊 Dashboard Global</h2>
+        <p style="color: var(--text-muted); margin: 0 0 24px;">Visão geral de todos os seus projetos</p>
+        <div class="row mb-4" id="dashboard-stats"></div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">📈 Projetos por Status</div>
+                    <div class="card-body">
+                        <canvas id="projetosStatusChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">📊 Evolução por Projeto</div>
+                    <div class="card-body">
+                        <canvas id="evolucaoGlobalChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">📋 Resumo dos Projetos</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="resumo-projetos-table"><tbody></tbody></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Página de Templates -->
+    <div id="page-templates" class="page">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h2 style="margin: 0; font-size: 28px; font-weight: 700;">📋 Templates de Checklist</h2>
+                <p style="color: var(--text-muted); margin: 4px 0 0;">Crie e gerencie templates reutilizáveis</p>
+            </div>
+            <button class="btn btn-primary" onclick="mostrarModalNovoTemplate()">
+                ➕ Novo Template
+            </button>
+        </div>
+        <div id="templates-container" class="row"></div>
+    </div>
+</div>
+
+<!-- ==================== MODAIS ====================  -->
+
+<!-- Modal Editar Projeto -->
+<div id="editarProjetoModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title">✏️ Editar Projeto</h5>
+                <button class="btn-close" onclick="fecharModal('editarProjetoModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome do Projeto</label>
+                    <input type="text" class="form-control" id="editarProjetoNome">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" id="editarProjetoDescricao" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-control" id="editarProjetoStatus">
+                        <option value="Ativo">Ativo</option>
+                        <option value="Em andamento">Em andamento</option>
+                        <option value="Concluído">Concluído</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('editarProjetoModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarEdicaoProjeto()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Template -->
+<div id="editarTemplateModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8 0%, #0c5460 100%); color: white;">
+                <h5 class="modal-title">✏️ Editar Template</h5>
+                <button class="btn-close" onclick="fecharModal('editarTemplateModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome do Template</label>
+                    <input type="text" class="form-control" id="editarTemplateNome">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" id="editarTemplateDescricao" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('editarTemplateModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarEdicaoTemplate()">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gerenciar Template -->
+<div id="gerenciarTemplateModal" class="modal">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title" id="gerenciarTemplateTitle">📋 Gerenciar Template</h5>
+                <button class="btn-close" onclick="fecharModal('gerenciarTemplateModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="gerenciarTemplateBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('gerenciarTemplateModal')">Fechar</button>
+                <button class="btn btn-success" onclick="adicionarNovoItemTemplate()">➕ Novo Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar/Editar Item -->
+<div id="itemTemplateModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #1f8a3b 100%); color: white;">
+                <h5 class="modal-title" id="itemTemplateModalTitle">📝 Item do Checklist</h5>
+                <button class="btn-close" onclick="fecharModal('itemTemplateModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="itemTemplateId">
+                <div class="mb-3">
+                    <label class="form-label">Categoria</label>
+                    <select class="form-control" id="itemCategoria">
+                        <option value="">-- Selecione ou crie uma categoria --</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary mt-2" onclick="criarNovaCategoria()">➕ Nova Categoria</button>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">ID do Item</label>
+                    <input type="text" class="form-control" id="itemId" placeholder="Ex: 1.1">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" id="itemDescricao" rows="3" placeholder="Descreva o item..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-check">
+                        <input type="checkbox" class="form-check-input" id="itemObrigatorio" checked>
+                        <span class="form-check-label">Item obrigatório</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('itemTemplateModal')">Cancelar</button>
+                <button class="btn btn-danger" id="btnDeletarItem" style="display:none;" onclick="deletarItemTemplate()">🗑️ Remover</button>
+                <button class="btn btn-success" onclick="salvarItemTemplate()">Salvar Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Projeto -->
+<div id="novoProjetoModal" class="modal">
+    <div class="modal-dialog" style="max-width: 650px;">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title">➕ Novo Projeto</h5>
+                <button class="btn-close" onclick="fecharModal('novoProjetoModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome do Projeto *</label>
+                    <input type="text" class="form-control" id="novoProjetoNome" placeholder="Ex: Ativação Rede Flex">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" id="novoProjetoDescricao" rows="2" placeholder="Descreva o objetivo..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Template de Checklist</label>
+                    <select class="form-control" id="novoProjetoTemplate">
+                        <option value="">-- Selecione um template (opcional) --</option>
+                    </select>
+                    <small class="text-muted">Deixe em branco para usar o template padrão</small>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">📂 Importar empresas (opcional)</label>
+                    <div id="upload-area-empresas" class="upload-area" onclick="document.getElementById('empresasFileInput').click()">
+                        <div style="font-size: 32px; margin-bottom: 8px;">📎</div>
+                        <div style="font-weight: 500; color: var(--dark);">Clique ou arraste um arquivo</div>
+                        <small class="text-muted">Excel (.xlsx, .xls) ou CSV</small>
+                        <div id="empresasFileName" class="mt-2 text-success" style="font-size: 12px;"></div>
+                    </div>
+                    <input type="file" id="empresasFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="prepararImportacaoEmpresas(this)">
+                    <input type="hidden" id="empresasFileContent">
+                    <input type="hidden" id="empresasFileType">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('novoProjetoModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="criarNovoProjetoCompleto()">Criar Projeto</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Empresa -->
+<div id="novaEmpresaModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #1f8a3b 100%); color: white;">
+                <h5 class="modal-title">➕ Nova Empresa</h5>
+                <button class="btn-close" onclick="fecharModal('novaEmpresaModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Número/Ordem</label>
+                    <input type="number" class="form-control" id="novaEmpresaNumero" placeholder="Opcional">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nome da Empresa *</label>
+                    <input type="text" class="form-control" id="novaEmpresaNome" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">CNPJ</label>
+                    <input type="text" class="form-control" id="novaEmpresaCnpj" placeholder="00.000.000/0001-00">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Data de Instalação</label>
+                    <input type="text" class="form-control" id="novaEmpresaData" placeholder="DD/MM/AAAA">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('novaEmpresaModal')">Cancelar</button>
+                <button class="btn btn-success" onclick="criarNovaEmpresa()">Salvar Empresa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Migração -->
+<div id="migracaoModal" class="modal">
+    <div class="modal-dialog" style="max-width: 600px;">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); color: #212529;">
+                <h5 class="modal-title">🔄 Migrar Dados de Banco Antigo</h5>
+                <button class="btn-close" onclick="fecharModal('migracaoModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>ℹ️ Como funciona:</strong>
+                    <ul class="mb-0 mt-2" style="margin-left: 16px;">
+                        <li>Selecione o arquivo SQLite (.db)</li>
+                        <li>Confirme a migração</li>
+                        <li>Dados serão importados automaticamente</li>
+                    </ul>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">📁 Arquivo do Banco de Dados (.db)</label>
+                    <div id="upload-area-migracao" class="upload-area" onclick="document.getElementById('migracaoFileInput').click()">
+                        <div style="font-size: 32px; margin-bottom: 8px;">📎</div>
+                        <div style="font-weight: 500; color: var(--dark);">Selecione o arquivo</div>
+                        <small class="text-muted">SQLite (.db, .sqlite, .sqlite3)</small>
+                        <div id="migracaoFileName" class="mt-2 text-success" style="font-size: 12px;"></div>
+                    </div>
+                    <input type="file" id="migracaoFileInput" accept=".db,.sqlite,.sqlite3" style="display:none" onchange="analisarBancoMigracao(this)">
+                </div>
+
+                <div id="migracaoPreview" style="display:none;">
+                    <div class="alert alert-success">
+                        <strong>✓ Banco analisado com sucesso!</strong>
+                        <div id="migracaoInfo" class="mt-2"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nome do Projeto</label>
+                        <input type="text" class="form-control" id="migracaoProjetoNome" placeholder="Ex: Projeto Migrado">
+                    </div>
+                </div>
+
+                <div id="migracaoStatus"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('migracaoModal')">Cancelar</button>
+                <button class="btn btn-warning" id="btnExecutarMigracao" onclick="executarMigracaoSelecionada()" disabled>Migrar Agora</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Checklist -->
+<div id="checklistModal" class="modal">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h5 class="modal-title" id="checklistModalTitle">📋 Checklist</h5>
+                <button class="btn-close" onclick="fecharModal('checklistModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="checklist-body"></div>
+            <div class="modal-footer">
+                <div class="w-100 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="flex-grow-1" style="min-width: 200px;">
+                        <div class="progress">
+                            <div id="modal-progress-bar" class="progress-bar" style="width: 0%">0%</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="fecharModal('checklistModal')">Fechar</button>
+                    <button id="btn-concluir-modal" class="btn btn-success" onclick="concluirChecklistEmpresa()" disabled>✓ Concluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Novo Template -->
+<div id="novoTemplateModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8 0%, #0c5460 100%); color: white;">
+                <h5 class="modal-title">➕ Novo Template</h5>
+                <button class="btn-close" onclick="fecharModal('novoTemplateModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nome do Template *</label>
+                    <input type="text" class="form-control" id="novoTemplateNome" placeholder="Ex: Checklist Rede Flex">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descrição</label>
+                    <textarea class="form-control" id="novoTemplateDescricao" rows="3" placeholder="Descreva o propósito..."></textarea>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label">Ou copiar de um template existente</label>
+                    <select class="form-control" id="copiarTemplateId">
+                        <option value="">-- Selecione um template para copiar --</option>
+                    </select>
+                    <small class="text-muted">Os itens serão duplicados</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal('novoTemplateModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="criarNovoTemplate()">Criar Template</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-notification">
+    <div id="notificationToast" class="toast">
+        <div class="toast-header">
+            <strong>ℹ️ Sistema</strong>
+        </div>
+        <div class="toast-body" id="toast-message"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ==================== VARIÁVEIS GLOBAIS ====================
+let projetosStatusChart = null;
+let evolucaoGlobalChart = null;
+let currentProjetoId = null;
+let currentEmpresaId = null;
+let currentTemplateId = null;
+let currentEditingItemId = null;
+let arquivoEmpresasBase64 = null;
+let arquivoEmpresasType = null;
+let dadosBancoSelecionado = null;
+
+// ==================== FUNÇÕES GERAIS ====================
+function showNotification(message, type = 'success') {
+    const toastEl = document.getElementById('notificationToast');
+    const toastBody = document.getElementById('toast-message');
+    toastBody.textContent = message;
+
+    toastEl.classList.add('show');
+    toastEl.style.borderLeftColor = type === 'success' ? 'var(--success)' : 'var(--danger)';
+
+    setTimeout(() => {
+        toastEl.classList.remove('show');
+    }, 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function abrirModal(modalId) {
+    document.getElementById(modalId).classList.add('show');
+    document.getElementById(modalId).style.display = 'flex';
+}
+
+function fecharModal(modalId) {
+    document.getElementById(modalId).classList.remove('show');
+    document.getElementById(modalId).style.display = 'none';
+}
+
+function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(`page-${page}`).classList.add('active');
+    document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById(`nav-${page}`).classList.add('active');
+
+    if (page === 'projetos') carregarProjetos();
+    if (page === 'dashboard') carregarDashboardGlobal();
+    if (page === 'templates') carregarTemplates();
+}
+
+// ==================== PROJETOS ====================
+async function carregarProjetos() {
+    try {
+        const response = await fetch('/api/projetos');
+        const projetos = await response.json();
+        const container = document.getElementById('projetos-container');
+
+        if (projetos.length === 0) {
+            container.innerHTML = `
+                <div class="col-md-12">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📁</div>
+                        <h4>Nenhum projeto criado</h4>
+                        <p>Comece criando seu primeiro projeto para gerenciar checklists</p>
+                        <button class="btn btn-primary" onclick="mostrarModalNovoProjeto()">
+                            ➕ Criar Primeiro Projeto
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = projetos.map(p => `
+            <div class="col-md-4">
+                <div class="card projeto-card" onclick="abrirProjeto(${p.id})" style="cursor: pointer;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 style="margin: 0; color: var(--primary); font-size: 16px;">${escapeHtml(p.nome)}</h5>
+                            <span class="badge ${p.status === 'Concluído' ? 'bg-success' : (p.status === 'Em andamento' ? 'bg-warning' : 'bg-primary')}">${p.status}</span>
+                        </div>
+                        <p class="text-muted" style="font-size: 13px; margin: 0;">${escapeHtml(p.descricao || 'Sem descrição')}</p>
+                        <hr style="margin: 12px 0;">
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                            <span>🏢 ${p.total_empresas} empresas</span>
+                            <span style="color: var(--success);">✓ ${p.empresas_concluidas}</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar" style="width: ${p.progresso_medio}%"></div>
+                        </div>
+                        <small class="text-muted">Progresso: ${Math.round(p.progresso_medio)}%</small>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <small class="text-muted">📅 ${p.data_criacao}</small>
+                        <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editarProjeto(${p.id}, '${escapeHtml(p.nome).replace(/'/g, "\\'")}', '${escapeHtml(p.descricao || '').replace(/'/g, "\\'")}', '${p.status}')">✏️</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        showNotification('Erro ao carregar projetos', 'danger');
+    }
+}
+
+function editarProjeto(id, nome, descricao, status) {
+    document.getElementById('editarProjetoNome').value = nome;
+    document.getElementById('editarProjetoDescricao').value = descricao;
+    document.getElementById('editarProjetoStatus').value = status;
+    currentProjetoId = id;
+    abrirModal('editarProjetoModal');
+}
+
+async function salvarEdicaoProjeto() {
+    const nome = document.getElementById('editarProjetoNome').value.trim();
+    const descricao = document.getElementById('editarProjetoDescricao').value.trim();
+    const status = document.getElementById('editarProjetoStatus').value;
+
+    if (!nome) { showNotification('Nome é obrigatório', 'danger'); return; }
+
+    try {
+        const response = await fetch(`/api/projeto/${currentProjetoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, descricao, status })
+        });
+        const data = await response.json();
+        if (data.success) {
+            showNotification('Projeto atualizado!', 'success');
+            fecharModal('editarProjetoModal');
+            carregarProjetos();
+        } else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao atualizar', 'danger'); }
+}
+
+async function abrirProjeto(projetoId) {
+    currentProjetoId = projetoId;
+    try {
+        const [empresasRes, projetosRes] = await Promise.all([fetch(`/api/empresas/${projetoId}`), fetch('/api/projetos')]);
+        const empresas = await empresasRes.json();
+        const projetos = await projetosRes.json();
+        const projeto = projetos.find(p => p.id === projetoId);
+
+        const container = document.getElementById('page-projetos');
+        container.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <div>
+                    <button class="btn btn-secondary me-2" onclick="voltarParaProjetos()">← Voltar</button>
+                    <h2 style="display: inline-block; margin: 0; font-size: 24px;">🏢 ${escapeHtml(projeto.nome)}</h2>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="editarProjeto(${projeto.id}, '${escapeHtml(projeto.nome).replace(/'/g, "\\'")}', '${escapeHtml(projeto.descricao || '').replace(/'/g, "\\'")}', '${projeto.status}')">✏️ Editar</button>
+                    <button class="btn btn-success" onclick="mostrarModalNovaEmpresa()">➕ Nova Empresa</button>
+                </div>
+            </div>
+            <div class="alert alert-info">ℹ️ Clique em qualquer campo (Nome, CNPJ ou Data) para editar</div>
+            <div class="row mb-4" id="projeto-stats"></div>
+            <div class="card">
+                <div class="card-header">Empresas do Projeto</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nome</th>
+                                    <th>CNPJ</th>
+                                    <th>Data Instalação</th>
+                                    <th>Progresso</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="empresas-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const total = empresas.length, concluidas = empresas.filter(e => e.status === 'Concluído').length, emAndamento = empresas.filter(e => e.status === 'Em andamento').length, pendentes = empresas.filter(e => e.status === 'Pendente').length;
+        document.getElementById('projeto-stats').innerHTML = `
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;">
+                    <h6>Total</h6>
+                    <h3>${total}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--success), #1f8a3b); color: white;">
+                    <h6>Concluídas</h6>
+                    <h3>${concluidas}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--warning), #e0a800); color: #212529;">
+                    <h6>Em andamento</h6>
+                    <h3>${emAndamento}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #6c757d, #495057); color: white;">
+                    <h6>Pendentes</h6>
+                    <h3>${pendentes}</h3>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('empresas-tbody').innerHTML = empresas.map(e => `
+            <tr>
+                <td><strong>${e.numero || '-'}</strong></td>
+                <td class="table-cell-editable" onclick="abrirEditorEmpresa(${e.id}, 'nome', '${escapeHtml(e.nome).replace(/'/g, "\\'")}')">🏢 ${escapeHtml(e.nome)}</td>
+                <td class="table-cell-editable" onclick="abrirEditorEmpresa(${e.id}, 'cnpj', '${e.cnpj || ''}')">🆔 ${e.cnpj || '-'}</td>
+                <td class="table-cell-editable" onclick="abrirEditorEmpresa(${e.id}, 'data_instalacao', '${e.data_instalacao || ''}')">📅 ${e.data_instalacao || '-'}</td>
+                <td style="width: 150px;"><div class="progress" style="height: 20px;"><div class="progress-bar" style="width: ${e.progresso}%">${Math.round(e.progresso)}%</div></div></td>
+                <td>${e.status === 'Concluído' ? '<span class="badge bg-success">Concluído</span>' : (e.status === 'Em andamento' ? '<span class="badge bg-warning">Em andamento</span>' : '<span class="badge bg-secondary">Pendente</span>')}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary me-1" onclick="abrirChecklistEmpresa(${e.id}, '${escapeHtml(e.nome).replace(/'/g, "\\'")}')">📋</button>
+                    <button class="btn btn-sm btn-danger" onclick="deletarEmpresa(${e.id})">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) { showNotification('Erro ao carregar projeto', 'danger'); }
+}
+
+function voltarParaProjetos() { location.reload(); }
+
+function abrirEditorEmpresa(empresaId, campo, valorAtual) {
+    let label = campo === 'nome' ? 'Nome' : (campo === 'cnpj' ? 'CNPJ' : 'Data');
+    let novoValor = prompt(`Editar ${label}:`, valorAtual);
+    if (novoValor === null || novoValor === valorAtual) return;
+    fetch(`/api/empresa/${empresaId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [campo]: novoValor }) })
+        .then(async res => { const data = await res.json(); if (data.success) { showNotification('Atualizado!', 'success'); abrirProjeto(currentProjetoId); } else { showNotification(data.message, 'danger'); } });
+}
+
+async function deletarEmpresa(empresaId) {
+    if (!confirm('Remover esta empresa?')) return;
+    const response = await fetch(`/api/empresa/${empresaId}`, { method: 'DELETE' });
+    const data = await response.json();
+    if (data.success) { showNotification('Empresa removida', 'success'); await abrirProjeto(currentProjetoId); }
+    else { showNotification(data.message, 'danger'); }
+}
+
+// ==================== EMPRESAS ====================
+function mostrarModalNovaEmpresa() {
+    document.getElementById('novaEmpresaNumero').value = '';
+    document.getElementById('novaEmpresaNome').value = '';
+    document.getElementById('novaEmpresaCnpj').value = '';
+    document.getElementById('novaEmpresaData').value = '';
+    abrirModal('novaEmpresaModal');
+}
+
+async function criarNovaEmpresa() {
+    const nome = document.getElementById('novaEmpresaNome').value.trim();
+    if (!nome) { showNotification('Informe o nome da empresa', 'danger'); return; }
+    try {
+        const response = await fetch('/api/empresa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projeto_id: currentProjetoId, numero: document.getElementById('novaEmpresaNumero').value, nome: nome, cnpj: document.getElementById('novaEmpresaCnpj').value, data_instalacao: document.getElementById('novaEmpresaData').value }) });
+        const data = await response.json();
+        if (data.success) { showNotification('Empresa adicionada!', 'success'); fecharModal('novaEmpresaModal'); await abrirProjeto(currentProjetoId); }
+        else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao criar empresa', 'danger'); }
+}
+
+// ==================== CHECKLIST ====================
+async function abrirChecklistEmpresa(empresaId, nome) {
+    currentEmpresaId = empresaId;
+    document.getElementById('checklistModalTitle').innerHTML = `📋 Checklist - ${escapeHtml(nome)}`;
+    try {
+        const response = await fetch(`/api/checklist/empresa/${empresaId}`);
+        const itens = await response.json();
+        let html = '', categorias = {};
+        for (let item of itens) { if (!categorias[item.categoria]) categorias[item.categoria] = []; categorias[item.categoria].push(item); }
+        for (let [categoria, catItens] of Object.entries(categorias)) {
+            html += `<div class="card mb-3"><div class="card-header" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;"><strong>${categoria}</strong></div><div class="card-body"><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Item</th><th>Descrição</th><th>Concluído</th><th>Observação</th></tr></thead><tbody>`;
+            for (let item of catItens) {
+                html += `<tr><td><strong>${item.item_id}</strong></td><td>${escapeHtml(item.descricao)}</td><td><div class="form-check"><input class="form-check-input" type="checkbox" id="chk_${item.checklist_item_id}" ${item.concluido ? 'checked' : ''} onchange="salvarItemChecklist(${item.checklist_item_id}, this.checked, document.getElementById('obs_${item.checklist_item_id}').value)"></div></td><td><textarea class="form-control form-control-sm" id="obs_${item.checklist_item_id}" rows="2" placeholder="Observações" onblur="salvarItemChecklist(${item.checklist_item_id}, document.getElementById('chk_${item.checklist_item_id}').checked, this.value)">${escapeHtml(item.observacao || '')}</textarea></td></tr>`;
+            }
+            html += `</tbody></table></div></div></div>`;
+        }
+        document.getElementById('checklist-body').innerHTML = html;
+        await atualizarProgressoModal();
+        abrirModal('checklistModal');
+    } catch (error) { showNotification('Erro ao carregar checklist', 'danger'); }
+}
+
+async function salvarItemChecklist(checklistItemId, concluido, observacao) {
+    try {
+        await fetch('/api/checklist/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ empresa_id: currentEmpresaId, checklist_item_id: checklistItemId, concluido: concluido, observacao: observacao }) });
+        await atualizarProgressoModal();
+    } catch (error) { console.error(error); }
+}
+
+async function atualizarProgressoModal() {
+    const response = await fetch(`/api/checklist/empresa/${currentEmpresaId}`);
+    const itens = await response.json();
+    const total = itens.length, concluidos = itens.filter(i => i.concluido).length, percentual = total > 0 ? (concluidos / total) * 100 : 0;
+    const progressBar = document.getElementById('modal-progress-bar');
+    progressBar.style.width = `${percentual}%`;
+    progressBar.textContent = `${Math.round(percentual)}%`;
+    document.getElementById('btn-concluir-modal').disabled = !(concluidos === total && total > 0);
+}
+
+async function concluirChecklistEmpresa() {
+    showNotification('✅ Checklist concluído!', 'success');
+    fecharModal('checklistModal');
+    await abrirProjeto(currentProjetoId);
+}
+
+// ==================== TEMPLATES ====================
+async function carregarTemplates() {
+    try {
+        const response = await fetch('/api/templates');
+        const templates = await response.json();
+        const container = document.getElementById('templates-container');
+        if (templates.length === 0) {
+            container.innerHTML = `
+                <div class="col-md-12">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h4>Nenhum template criado</h4>
+                        <p>Templates ajudam você a padronizar checklists reutilizáveis</p>
+                        <button class="btn btn-primary" onclick="mostrarModalNovoTemplate()">
+                            ➕ Criar Primeiro Template
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        container.innerHTML = templates.map(t => `
+            <div class="col-md-4">
+                <div class="card template-card">
+                    <div class="card-body">
+                        <h5 style="margin: 0 0 8px; color: var(--primary); font-size: 16px;">${escapeHtml(t.nome)}</h5>
+                        <p class="text-muted" style="font-size: 13px; margin: 0;">${escapeHtml(t.descricao || 'Sem descrição')}</p>
+                        <div class="mt-3">
+                            <span class="badge bg-info">${t.total_itens} itens</span>
+                        </div>
+                        <small class="text-muted" style="display: block; margin-top: 8px;">Criado em ${t.data_criacao}</small>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between flex-wrap gap-2">
+                        <button class="btn btn-sm btn-info" onclick="visualizarTemplate(${t.id}, '${escapeHtml(t.nome).replace(/'/g, "\\'")}')">👁️</button>
+                        <button class="btn btn-sm btn-primary" onclick="gerenciarTemplate(${t.id}, '${escapeHtml(t.nome).replace(/'/g, "\\'")}')">✏️</button>
+                        <button class="btn btn-sm btn-success" onclick="duplicarTemplate(${t.id}, '${escapeHtml(t.nome).replace(/'/g, "\\'")}')">📋</button>
+                        <button class="btn btn-sm btn-danger" onclick="deletarTemplate(${t.id})">🗑️</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        const select = document.getElementById('copiarTemplateId');
+        if (select) select.innerHTML = '<option value="">-- Selecione um template para copiar --</option>' + templates.map(t => `<option value="${t.id}">${escapeHtml(t.nome)} (${t.total_itens} itens)</option>`).join('');
+    } catch (error) { showNotification('Erro ao carregar templates', 'danger'); }
+}
+
+function mostrarModalNovoTemplate() {
+    document.getElementById('novoTemplateNome').value = '';
+    document.getElementById('novoTemplateDescricao').value = '';
+    abrirModal('novoTemplateModal');
+}
+
+async function criarNovoTemplate() {
+    const nome = document.getElementById('novoTemplateNome').value.trim();
+    const descricao = document.getElementById('novoTemplateDescricao').value.trim();
+    const copiarDe = document.getElementById('copiarTemplateId').value;
+    if (!nome) { showNotification('Informe o nome do template', 'danger'); return; }
+    try {
+        let response;
+        if (copiarDe) {
+            response = await fetch(`/api/template/${copiarDe}/duplicar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ novo_nome: nome }) });
+        } else {
+            response = await fetch('/api/template', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, descricao }) });
+        }
+        const data = await response.json();
+        if (data.success) { showNotification('Template criado!', 'success'); fecharModal('novoTemplateModal'); carregarTemplates(); }
+        else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao criar template', 'danger'); }
+}
+
+async function duplicarTemplate(templateId, nomeOriginal) {
+    const novoNome = prompt('Digite o nome do novo template:', `${nomeOriginal} (Cópia)`);
+    if (!novoNome) return;
+    try {
+        const response = await fetch(`/api/template/${templateId}/duplicar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ novo_nome: novoNome }) });
+        const data = await response.json();
+        if (data.success) { showNotification('Template duplicado!', 'success'); carregarTemplates(); }
+        else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao duplicar', 'danger'); }
+}
+
+function editarTemplate(id, nome, descricao) {
+    document.getElementById('editarTemplateNome').value = nome;
+    document.getElementById('editarTemplateDescricao').value = descricao;
+    currentTemplateId = id;
+    abrirModal('editarTemplateModal');
+}
+
+async function salvarEdicaoTemplate() {
+    const nome = document.getElementById('editarTemplateNome').value.trim();
+    const descricao = document.getElementById('editarTemplateDescricao').value.trim();
+    if (!nome) { showNotification('Nome é obrigatório', 'danger'); return; }
+    try {
+        const response = await fetch(`/api/template/${currentTemplateId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, descricao }) });
+        const data = await response.json();
+        if (data.success) { showNotification('Template atualizado!', 'success'); fecharModal('editarTemplateModal'); carregarTemplates(); }
+        else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao atualizar', 'danger'); }
+}
+
+async function gerenciarTemplate(templateId, nome) {
+    currentTemplateId = templateId;
+    document.getElementById('gerenciarTemplateTitle').innerHTML = `📋 Gerenciar Template - ${escapeHtml(nome)}`;
+    try {
+        const response = await fetch(`/api/template/${templateId}/itens`);
+        const itens = await response.json();
+        let html = '<div class="alert alert-info">✨ Clique em um item para editar ou use o botão "Novo Item"</div>';
+        let categorias = {};
+        for (let item of itens) { if (!categorias[item.categoria]) categorias[item.categoria] = []; categorias[item.categoria].push(item); }
+        for (let [categoria, catItens] of Object.entries(categorias)) {
+            html += `<div class="card mb-3"><div class="card-header" style="background: linear-gradient(135deg, var(--info), #0c5460); color: white; display: flex; justify-content: space-between; align-items: center;"><strong>${categoria}</strong><button class="btn btn-sm btn-light" onclick="adicionarItemNaCategoria('${categoria}')">➕ Item</button></div><div class="card-body"><div class="table-responsive"><table class="table table-sm"><thead><tr><th>ID</th><th>Descrição</th><th>Obrigatório</th><th>Ações</th></tr></thead><tbody>`;
+            for (let item of catItens) {
+                html += `<tr><td><strong>${item.item_id}</strong></td><td>${escapeHtml(item.descricao)}</td><td>${item.obrigatorio ? '✓' : '○'}</td><td><button class="btn btn-sm btn-primary" onclick="editarItemTemplate(${item.id}, '${item.categoria}', '${item.item_id}', '${escapeHtml(item.descricao).replace(/'/g, "\\'")}', ${item.obrigatorio})">✏️</button></td></tr>`;
+            }
+            html += `</tbody></table></div></div></div>`;
+        }
+        if (itens.length === 0) html += '<div class="alert alert-warning">Nenhum item cadastrado. Clique em "Novo Item" para começar.</div>';
+        document.getElementById('gerenciarTemplateBody').innerHTML = html;
+        abrirModal('gerenciarTemplateModal');
+    } catch (error) { showNotification('Erro ao carregar itens', 'danger'); }
+}
+
+function adicionarNovoItemTemplate() {
+    currentEditingItemId = null;
+    document.getElementById('itemTemplateModalTitle').innerHTML = '📝 Novo Item';
+    document.getElementById('itemTemplateId').value = '';
+    document.getElementById('itemId').value = '';
+    document.getElementById('itemDescricao').value = '';
+    document.getElementById('itemObrigatorio').checked = true;
+    document.getElementById('btnDeletarItem').style.display = 'none';
+    carregarCategorias();
+    abrirModal('itemTemplateModal');
+}
+
+function adicionarItemNaCategoria(categoria) {
+    currentEditingItemId = null;
+    document.getElementById('itemTemplateModalTitle').innerHTML = '📝 Novo Item';
+    document.getElementById('itemTemplateId').value = '';
+    document.getElementById('itemId').value = '';
+    document.getElementById('itemDescricao').value = '';
+    document.getElementById('itemObrigatorio').checked = true;
+    document.getElementById('btnDeletarItem').style.display = 'none';
+    carregarCategorias(categoria);
+    abrirModal('itemTemplateModal');
+}
+
+function editarItemTemplate(id, categoria, itemId, descricao, obrigatorio) {
+    currentEditingItemId = id;
+    document.getElementById('itemTemplateModalTitle').innerHTML = '✏️ Editar Item';
+    document.getElementById('itemTemplateId').value = id;
+    document.getElementById('itemId').value = itemId;
+    document.getElementById('itemDescricao').value = descricao;
+    document.getElementById('itemObrigatorio').checked = obrigatorio;
+    document.getElementById('btnDeletarItem').style.display = 'inline-block';
+    carregarCategorias(categoria);
+    abrirModal('itemTemplateModal');
+}
+
+async function carregarCategorias(selecionar = null) {
+    try {
+        const response = await fetch(`/api/template/${currentTemplateId}/itens`);
+        const itens = await response.json();
+        const categorias = [...new Set(itens.map(i => i.categoria))];
+        const select = document.getElementById('itemCategoria');
+        select.innerHTML = '<option value="">-- Selecione uma categoria --</option>' + categorias.map(c => `<option value="${escapeHtml(c)}" ${selecionar === c ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
+        if (selecionar && !categorias.includes(selecionar)) {
+            select.innerHTML += `<option value="${escapeHtml(selecionar)}" selected>${escapeHtml(selecionar)}</option>`;
+        }
+    } catch (error) { console.error(error); }
+}
+
+async function criarNovaCategoria() {
+    const categoria = prompt('Digite o nome da nova categoria:');
+    if (!categoria) return;
+    const select = document.getElementById('itemCategoria');
+    select.innerHTML += `<option value="${escapeHtml(categoria)}" selected>${escapeHtml(categoria)}</option>`;
+    showNotification(`Categoria "${categoria}" criada!`, 'success');
+}
+
+async function salvarItemTemplate() {
+    const categoria = document.getElementById('itemCategoria').value;
+    const itemId = document.getElementById('itemId').value.trim();
+    const descricao = document.getElementById('itemDescricao').value.trim();
+    const obrigatorio = document.getElementById('itemObrigatorio').checked;
+    if (!categoria) { showNotification('Selecione uma categoria', 'danger'); return; }
+    if (!itemId) { showNotification('Informe o ID do item', 'danger'); return; }
+    if (!descricao) { showNotification('Informe a descrição', 'danger'); return; }
+    try {
+        let response;
+        if (currentEditingItemId) {
+            response = await fetch(`/api/template/item/${currentEditingItemId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ descricao, obrigatorio }) });
+        } else {
+            response = await fetch(`/api/template/${currentTemplateId}/item`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ categoria, item_id: itemId, descricao, obrigatorio }) });
+        }
+        const data = await response.json();
+        if (data.success) { showNotification('Item salvo!', 'success'); fecharModal('itemTemplateModal'); gerenciarTemplate(currentTemplateId, ''); }
+        else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao salvar item', 'danger'); }
+}
+
+async function deletarItemTemplate() {
+    if (!confirm('Remover este item?')) return;
+    try {
+        const response = await fetch(`/api/template/item/${currentEditingItemId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.success) { showNotification('Item removido!', 'success'); fecharModal('itemTemplateModal'); gerenciarTemplate(currentTemplateId, ''); }
+        else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao remover item', 'danger'); }
+}
+
+async function visualizarTemplate(templateId, nome) {
+    try {
+        const response = await fetch(`/api/checklist/template/${templateId}`);
+        const categorias = await response.json();
+        let html = '';
+        for (let [categoria, itens] of Object.entries(categorias)) {
+            html += `<div class="card mb-3"><div class="card-header" style="background: linear-gradient(135deg, var(--info), #0c5460); color: white;"><strong>${categoria}</strong></div><div class="card-body"><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Item</th><th>Descrição</th><th>Obrigatório</th></tr></thead><tbody>${itens.map(item => `<tr><td><strong>${item.item_id}</strong></td><td>${escapeHtml(item.descricao)}</td><td>${item.obrigatorio ? '✓' : '○'}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+        }
+        window.currentTemplateId = templateId;
+        let html2 = `<div class="modal" id="viewTemplateModal"><div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;"><h5 class="modal-title" id="viewTemplateTitle">📋 Visualizar Template - ${escapeHtml(nome)}</h5><button class="btn-close" onclick="fecharModal('viewTemplateModal')">&times;</button></div><div class="modal-body" id="viewTemplateBody">${html}</div><div class="modal-footer"><button class="btn btn-secondary" onclick="fecharModal('viewTemplateModal')">Fechar</button></div></div></div></div>`;
+        if (!document.getElementById('viewTemplateModal')) {
+            document.body.insertAdjacentHTML('beforeend', html2);
+        } else {
+            document.getElementById('viewTemplateBody').innerHTML = html;
+            document.getElementById('viewTemplateTitle').innerHTML = `📋 Visualizar Template - ${escapeHtml(nome)}`;
+        }
+        abrirModal('viewTemplateModal');
+    } catch (error) { showNotification('Erro ao visualizar template', 'danger'); }
+}
+
+async function deletarTemplate(templateId) {
+    if (!confirm('Remover este template?')) return;
+    try {
+        const response = await fetch(`/api/template/${templateId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (data.success) { showNotification('Template removido', 'success'); carregarTemplates(); }
+        else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao deletar template', 'danger'); }
+}
+
+// ==================== MIGRAÇÃO ====================
+function mostrarModalMigracao() {
+    document.getElementById('migracaoFileName').innerHTML = '';
+    document.getElementById('migracaoPreview').style.display = 'none';
+    document.getElementById('migracaoStatus').innerHTML = '';
+    document.getElementById('migracaoProjetoNome').value = '';
+    document.getElementById('migracaoFileInput').value = '';
+    dadosBancoSelecionado = null;
+    document.getElementById('btnExecutarMigracao').disabled = true;
+    abrirModal('migracaoModal');
+}
+
+async function analisarBancoMigracao(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (!file.name.endsWith('.db') && !file.name.endsWith('.sqlite') && !file.name.endsWith('.sqlite3')) {
+        showNotification('Selecione um arquivo .db', 'danger'); return;
+    }
+    document.getElementById('migracaoFileName').innerHTML = `📄 ${file.name}`;
+    document.getElementById('migracaoStatus').innerHTML = '<div class="alert alert-info">🔍 Analisando...</div>';
+    document.getElementById('btnExecutarMigracao').disabled = true;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const response = await fetch('/api/migrar/selecionar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_content: e.target.result, file_name: file.name }) });
+            const data = await response.json();
+            if (data.success) {
+                dadosBancoSelecionado = data.info;
+                let empresasHtml = '';
+                if (data.info.empresas_preview && data.info.empresas_preview.length > 0) {
+                    empresasHtml = '<div class="mt-3"><strong>Exemplo de empresas:</strong><ul class="mb-0 mt-2" style="margin-left: 16px;">';
+                    for (let emp of data.info.empresas_preview) empresasHtml += `<li>${emp.numero || '?'} - ${emp.nome}</li>`;
+                    if (data.info.total_lojas > 5) empresasHtml += `<li><em>... e mais ${data.info.total_lojas - 5}</em></li>`;
+                    empresasHtml += '</ul></div>';
+                }
+                document.getElementById('migracaoInfo').innerHTML = `<div><strong>Empresas:</strong> ${data.info.total_lojas}</div><div><strong>Progressos:</strong> ${data.info.total_progressos}</div>${empresasHtml}`;
+                document.getElementById('migracaoProjetoNome').value = `Migrado - ${file.name.replace('.db', '').replace('.sqlite', '')}`;
+                document.getElementById('migracaoPreview').style.display = 'block';
+                document.getElementById('migracaoStatus').innerHTML = '';
+                document.getElementById('btnExecutarMigracao').disabled = false;
+            } else { document.getElementById('migracaoStatus').innerHTML = `<div class="alert alert-danger">✗ ${data.message}</div>`; }
+        } catch (error) { document.getElementById('migracaoStatus').innerHTML = `<div class="alert alert-danger">✗ Erro: ${error.message}</div>`; }
+    };
+    reader.readAsDataURL(file);
+}
+
+async function executarMigracaoSelecionada() {
+    const projetoNome = document.getElementById('migracaoProjetoNome').value.trim();
+    if (!projetoNome) { showNotification('Informe um nome para o projeto', 'danger'); return; }
+    const btn = document.getElementById('btnExecutarMigracao');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Migrando...';
+    btn.disabled = true;
+    try {
+        const response = await fetch('/api/migrar/executar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projeto_nome: projetoNome }) });
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('migracaoStatus').innerHTML = `<div class="alert alert-success">✓ ${data.message}</div>`;
+            setTimeout(() => { fecharModal('migracaoModal'); carregarProjetos(); showNotification('Migração concluída!', 'success'); }, 2000);
+        } else { document.getElementById('migracaoStatus').innerHTML = `<div class="alert alert-danger">✗ ${data.message}</div>`; btn.innerHTML = originalText; btn.disabled = false; }
+    } catch (error) { document.getElementById('migracaoStatus').innerHTML = `<div class="alert alert-danger">✗ Erro: ${error.message}</div>`; btn.innerHTML = originalText; btn.disabled = false; }
+}
+
+// ==================== NOVO PROJETO COM IMPORTAÇÃO ====================
+function prepararImportacaoEmpresas(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('empresasFileName').innerHTML = `📄 ${file.name}`;
+    const reader = new FileReader();
+    reader.onload = function(e) { arquivoEmpresasBase64 = e.target.result; arquivoEmpresasType = file.name.endsWith('.csv') ? 'csv' : 'excel'; };
+    reader.readAsDataURL(file);
+}
+
+function mostrarModalNovoProjeto() {
+    document.getElementById('novoProjetoNome').value = '';
+    document.getElementById('novoProjetoDescricao').value = '';
+    document.getElementById('empresasFileName').innerHTML = '';
+    arquivoEmpresasBase64 = null;
+    fetch('/api/templates').then(res => res.json()).then(templates => {
+        const select = document.getElementById('novoProjetoTemplate');
+        select.innerHTML = '<option value="">-- Selecione um template (opcional) --</option>' + templates.map(t => `<option value="${t.id}">${escapeHtml(t.nome)} (${t.total_itens} itens)</option>`).join('');
+    });
+    abrirModal('novoProjetoModal');
+}
+
+async function criarNovoProjetoCompleto() {
+    const nome = document.getElementById('novoProjetoNome').value.trim();
+    const descricao = document.getElementById('novoProjetoDescricao').value.trim();
+    const templateId = document.getElementById('novoProjetoTemplate').value;
+    if (!nome) { showNotification('Informe o nome do projeto', 'danger'); return; }
+    try {
+        const response = await fetch('/api/projeto', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, descricao, template_id: templateId || null }) });
+        const data = await response.json();
+        if (data.success) {
+            currentProjetoId = data.projeto.id;
+            if (arquivoEmpresasBase64) {
+                const importResponse = await fetch('/api/empresas/importar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projeto_id: currentProjetoId, file_content: arquivoEmpresasBase64, file_type: arquivoEmpresasType }) });
+                const importData = await importResponse.json();
+                if (importData.success) showNotification(importData.message, 'success');
+                else showNotification(importData.message, 'warning');
+            }
+            showNotification('Projeto criado!', 'success');
+            fecharModal('novoProjetoModal');
+            carregarProjetos();
+        } else { showNotification(data.message, 'danger'); }
+    } catch (error) { showNotification('Erro ao criar projeto', 'danger'); }
+}
+
+// ==================== DASHBOARD ====================
+async function carregarDashboardGlobal() {
+    try {
+        const response = await fetch('/api/projetos');
+        const projetos = await response.json();
+        const total = projetos.length, ativos = projetos.filter(p => p.status === 'Ativo').length, emAndamento = projetos.filter(p => p.status === 'Em andamento').length, concluidos = projetos.filter(p => p.status === 'Concluído').length;
+        const totalEmpresas = projetos.reduce((s, p) => s + p.total_empresas, 0), empresasConcluidas = projetos.reduce((s, p) => s + p.empresas_concluidas, 0);
+        document.getElementById('dashboard-stats').innerHTML = `
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--info), #0c5460); color: white;">
+                    <h6>Projetos</h6>
+                    <h3>${total}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--success), #1f8a3b); color: white;">
+                    <h6>Concluídos</h6>
+                    <h3>${concluidos}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white;">
+                    <h6>Empresas</h6>
+                    <h3>${totalEmpresas}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--warning), #e0a800); color: #212529;">
+                    <h6>Concluídas</h6>
+                    <h3>${empresasConcluidas}</h3>
+                </div>
+            </div>
+        `;
+        document.getElementById('resumo-projetos-table').innerHTML = `
+            <thead class="table-light">
+                <tr>
+                    <th>Projeto</th>
+                    <th>Status</th>
+                    <th>Empresas</th>
+                    <th>Concluídas</th>
+                    <th>Progresso</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${projetos.map(p => `
+                    <tr>
+                        <td><strong>${escapeHtml(p.nome)}</strong></td>
+                        <td><span class="badge ${p.status === 'Concluído' ? 'bg-success' : (p.status === 'Em andamento' ? 'bg-warning' : 'bg-primary')}">${p.status}</span></td>
+                        <td>${p.total_empresas}</td>
+                        <td>${p.empresas_concluidas}</td>
+                        <td><div class="progress"><div class="progress-bar" style="width: ${p.progresso_medio}%">${Math.round(p.progresso_medio)}%</div></div></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        if (projetosStatusChart) projetosStatusChart.destroy();
+        projetosStatusChart = new Chart(document.getElementById('projetosStatusChart').getContext('2d'), { type: 'doughnut', data: { labels: ['Ativos', 'Em andamento', 'Concluídos'], datasets: [{ data: [ativos, emAndamento, concluidos], backgroundColor: ['#667eea', '#ffc107', '#28a745'] }] } });
+        if (evolucaoGlobalChart) evolucaoGlobalChart.destroy();
+        evolucaoGlobalChart = new Chart(document.getElementById('evolucaoGlobalChart').getContext('2d'), { type: 'bar', data: { labels: projetos.map(p => p.nome.length > 20 ? p.nome.substring(0, 20) + '...' : p.nome), datasets: [{ label: 'Progresso (%)', data: projetos.map(p => p.progresso_medio), backgroundColor: '#667eea' }] }, options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } } });
+    } catch (error) { console.error(error); }
+}
+
+// Inicialização
+carregarProjetos();
+carregarTemplates();
+window.onclick = function(event) { if (event.target.classList.contains('modal')) { event.target.classList.remove('show'); event.target.style.display = 'none'; } };
+</script>
+</body>
+</html>
