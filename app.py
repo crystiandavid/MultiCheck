@@ -13,7 +13,8 @@ import shutil
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_muito_segura_aqui_12345678'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///checklist.db'
+app.config['BASE_DIR'] = 'sqlite:///checklist.db'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///checklist.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 db = SQLAlchemy(app)
